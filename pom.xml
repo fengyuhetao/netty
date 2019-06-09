@@ -322,52 +322,20 @@
 
   <modules>
     <module>all</module>
-    <module>dev-tools</module>
     <module>common</module>
     <module>buffer</module>
     <module>codec</module>
-    <module>codec-dns</module>
-    <module>codec-haproxy</module>
     <module>codec-http</module>
-    <module>codec-http2</module>
-    <module>codec-memcache</module>
-    <module>codec-mqtt</module>
-    <module>codec-redis</module>
-    <module>codec-smtp</module>
-    <module>codec-socks</module>
-    <module>codec-stomp</module>
-    <module>codec-xml</module>
     <module>resolver</module>
-    <module>resolver-dns</module>
     <module>tarball</module>
     <module>transport</module>
-    <module>transport-native-unix-common-tests</module>
-    <module>transport-native-unix-common</module>
-    <module>transport-native-epoll</module>
-    <module>transport-native-kqueue</module>
-    <module>transport-rxtx</module>
-    <module>transport-sctp</module>
-    <module>transport-udt</module>
     <module>handler</module>
-    <module>handler-proxy</module>
     <module>example</module>
-    <module>testsuite</module>
-    <module>testsuite-autobahn</module>
-    <module>testsuite-http2</module>
-    <module>testsuite-osgi</module>
-    <module>testsuite-shading</module>
-    <module>testsuite-native-image</module>
-    <module>microbench</module>
     <module>bom</module>
   </modules>
 
   <dependencyManagement>
     <dependencies>
-      <dependency>
-        <groupId>${project.groupId}</groupId>
-        <artifactId>netty-dev-tools</artifactId>
-        <version>${project.version}</version>
-      </dependency>
 
       <!-- Needed for java11 and later as javax.activation is not part of the JDK anymore -->
       <dependency>
