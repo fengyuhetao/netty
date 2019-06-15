@@ -241,21 +241,25 @@ public abstract class AbstractNioChannel extends AbstractChannel {
             }
 
             try {
+                // 目前有正在连接远程地址的 ChannelPromise ，则直接抛出异常，禁止同时发起多个连接。
                 if (connectPromise != null) {
                     // Already a connect in process.
                     throw new ConnectionPendingException();
                 }
 
                 boolean wasActive = isActive();
+//                正式进行连接
                 if (doConnect(remoteAddress, localAddress)) {
                     fulfillConnectPromise(promise, wasActive);
                 } else {
+//                    记录promise
                     connectPromise = promise;
                     requestedRemoteAddress = remoteAddress;
 
                     // Schedule connect timeout.
                     int connectTimeoutMillis = config().getConnectTimeoutMillis();
                     if (connectTimeoutMillis > 0) {
+                        // 使用 EventLoop 发起定时任务，监听连接远程地址超时。若连接超时，则回调通知 connectPromise 超时异常。
                         connectTimeoutFuture = eventLoop().schedule(new Runnable() {
                             @Override
                             public void run() {
@@ -269,6 +273,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
                         }, connectTimeoutMillis, TimeUnit.MILLISECONDS);
                     }
 
+                    // 添加监听器，监听连接远程地址取消。
                     promise.addListener(new ChannelFutureListener() {
                         @Override
                         public void operationComplete(ChannelFuture future) throws Exception {
@@ -298,11 +303,13 @@ public abstract class AbstractNioChannel extends AbstractChannel {
             // We still need to ensure we call fireChannelActive() in this case.
             boolean active = isActive();
 
+            // 回调通知 promise 执行成功
             // trySuccess() will return false if a user cancelled the connection attempt.
             boolean promiseSet = promise.trySuccess();
 
             // Regardless if the connection attempt was cancelled, channelActive() event should be triggered,
             // because what happened is what happened.
+            // 若 Channel 是新激活的，触发通知 Channel 已激活的事件。
             if (!wasActive && active) {
                 pipeline().fireChannelActive();
             }
