@@ -516,7 +516,9 @@ public final class WorldClockProtocol {
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized != -1) {
+        return isInitialized == 1;
+      }
 
       if (!hasContinent()) {
         memoizedIsInitialized = 0;
@@ -727,7 +729,9 @@ public final class WorldClockProtocol {
       }
 
       public Builder mergeFrom(io.netty.example.worldclock.WorldClockProtocol.Location other) {
-        if (other == io.netty.example.worldclock.WorldClockProtocol.Location.getDefaultInstance()) return this;
+        if (other == io.netty.example.worldclock.WorldClockProtocol.Location.getDefaultInstance()) {
+          return this;
+        }
         if (other.hasContinent()) {
           setContinent(other.getContinent());
         }
@@ -1063,7 +1067,9 @@ public final class WorldClockProtocol {
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized != -1) {
+        return isInitialized == 1;
+      }
 
       for (int i = 0; i < getLocationCount(); i++) {
         if (!getLocation(i).isInitialized()) {
@@ -1267,7 +1273,10 @@ public final class WorldClockProtocol {
       }
 
       public Builder mergeFrom(io.netty.example.worldclock.WorldClockProtocol.Locations other) {
-        if (other == io.netty.example.worldclock.WorldClockProtocol.Locations.getDefaultInstance()) return this;
+        if (other == io.netty.example.worldclock.WorldClockProtocol.Locations.getDefaultInstance()) {
+          return this;
+        }
+
         if (locationBuilder_ == null) {
           if (!other.location_.isEmpty()) {
             if (location_.isEmpty()) {
@@ -1907,7 +1916,9 @@ public final class WorldClockProtocol {
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized != -1) {
+        return isInitialized == 1;
+      }
 
       if (!hasYear()) {
         memoizedIsInitialized = 0;

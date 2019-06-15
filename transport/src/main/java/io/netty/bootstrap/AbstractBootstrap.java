@@ -51,11 +51,25 @@ import java.util.Map;
 public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C extends Channel> implements Cloneable {
 
     volatile EventLoopGroup group;
+
+    /**
+     * Channel 工厂，用于创建 Channel 对象。
+     * * NioServerSocketChannel.class，正常来说，只用到这个
+     * * OioServerSocketChannel 废弃掉了，
+     */
     @SuppressWarnings("deprecation")
     private volatile ChannelFactory<? extends C> channelFactory;
+
+    /**
+     * 本地地址
+     */
     private volatile SocketAddress localAddress;
-    private final Map<ChannelOption<?>, Object> options = new LinkedHashMap<ChannelOption<?>, Object>();
-    private final Map<AttributeKey<?>, Object> attrs = new LinkedHashMap<AttributeKey<?>, Object>();
+
+//   可选项集合, ChannelOption
+private final Map<ChannelOption<?>, Object> options = new LinkedHashMap<ChannelOption<?>, Object>();
+
+//    TODO 属性集合，具体哪些属性未知
+private final Map<AttributeKey<?>, Object> attrs = new LinkedHashMap<AttributeKey<?>, Object>();
     private volatile ChannelHandler handler;
 
     AbstractBootstrap() {
