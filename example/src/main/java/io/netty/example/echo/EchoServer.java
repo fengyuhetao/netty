@@ -53,7 +53,7 @@ public final class EchoServer {
                  @Override
                  public void initChannel(SocketChannel ch) throws Exception {
                      ChannelPipeline p = ch.pipeline();
-                     //p.addLast(new LoggingHandler(LogLevel.INFO));
+                     //p.addLast(ne zw LoggingHandler(LogLevel.INFO));
                      p.addLast(serverHandler);
                  }
              });
