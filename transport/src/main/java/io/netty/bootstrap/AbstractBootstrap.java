@@ -68,7 +68,11 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     //   可选项集合, ChannelOption
     private final Map<ChannelOption<?>, Object> options = new LinkedHashMap<ChannelOption<?>, Object>();
 
+<<<<<<< HEAD
     //  自定义属性
+=======
+    //    TODO 属性集合，具体哪些属性未知
+>>>>>>> 9323368bd114aea34e853a23a950bf749f36dae8
     private final Map<AttributeKey<?>, Object> attrs = new LinkedHashMap<AttributeKey<?>, Object>();
     private volatile ChannelHandler handler;
 
@@ -320,7 +324,11 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     final ChannelFuture initAndRegister() {
         Channel channel = null;
         try {
+            // 根据channel方法传入的socketchannel创建一个新的channel
+//             EchoServer中channel(NioServerSocketChannel.class)
             channel = channelFactory.newChannel();
+
+//            初始化channel
             init(channel);
         } catch (Throwable t) {
             if (channel != null) {
@@ -333,6 +341,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
             return new DefaultChannelPromise(new FailedChannel(), GlobalEventExecutor.INSTANCE).setFailure(t);
         }
 
+        // 注册channel 到 eventloop
         ChannelFuture regFuture = config().group().register(channel);
         if (regFuture.cause() != null) {
             if (channel.isRegistered()) {
@@ -438,6 +447,13 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         return copiedMap(attrs);
     }
 
+    /**
+     * 该方法针对channel Options
+     *
+     * @param channel
+     * @param options
+     * @param logger
+     */
     static void setChannelOptions(
             Channel channel, Map<ChannelOption<?>, Object> options, InternalLogger logger) {
         for (Map.Entry<ChannelOption<?>, Object> e : options.entrySet()) {
@@ -445,6 +461,13 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         }
     }
 
+    /**
+     * 这个方法主要针对childChannel Options
+     *
+     * @param channel
+     * @param options
+     * @param logger
+     */
     static void setChannelOptions(
             Channel channel, Map.Entry<ChannelOption<?>, Object>[] options, InternalLogger logger) {
         for (Map.Entry<ChannelOption<?>, Object> e : options) {
@@ -452,6 +475,10 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         }
     }
 
+    /**
+     * 设置已经创建的channel的可选项， options设置可选项
+     * options方法设置的可选性最终会被依然会通过该方法放到已经创建的channel的config中。
+     */
     @SuppressWarnings("unchecked")
     private static void setChannelOption(
             Channel channel, ChannelOption<?> option, Object value, InternalLogger logger) {
