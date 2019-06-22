@@ -59,10 +59,20 @@ public final class NioEventLoop extends SingleThreadEventLoop {
 
     private static final int CLEANUP_INTERVAL = 256; // XXX Hard-coded value, but won't need customization.
 
+    /**
+     * 是否禁用 SelectionKey 的优化，默认禁用优化
+     */
     private static final boolean DISABLE_KEY_SET_OPTIMIZATION =
             SystemPropertyUtil.getBoolean("io.netty.noKeySetOptimization", false);
 
+    /**
+     * 少于该 N 值，不开启空轮询重建新的 Selector 对象的功能
+     */
     private static final int MIN_PREMATURE_SELECTOR_RETURNS = 3;
+
+    /**
+     * NIO Selector 空轮询该 N 次后，重建新的 Selector 对象，默认512
+     */
     private static final int SELECTOR_AUTO_REBUILD_THRESHOLD;
 
     private final IntSupplier selectNowSupplier = new IntSupplier() {
@@ -109,11 +119,23 @@ public final class NioEventLoop extends SingleThreadEventLoop {
 
     /**
      * The NIO {@link Selector}.
+     * 包装过的，优化过的selector
      */
     private Selector selector;
+
+    /**
+     * 原始的selector
+     */
     private Selector unwrappedSelector;
+
+    /**
+     * 注册的 SelectionKey 集合。Netty 自己实现，经过优化。
+     */
     private SelectedSelectionKeySet selectedKeys;
 
+    /**
+     * SelectorProvider 对象，用于创建 Selector 对象
+     */
     private final SelectorProvider provider;
 
     /**
@@ -121,13 +143,29 @@ public final class NioEventLoop extends SingleThreadEventLoop {
      * break out of its selection process. In our case we use a timeout for
      * the select method and the select method will block for that time unless
      * waken up.
+     *
+     * 唤醒标记。因为唤醒方法 {@link Selector#wakeup()} 开销比较大，通过该标识，减少调用。
      */
     private final AtomicBoolean wakenUp = new AtomicBoolean();
 
+    /**
+     * select 策略
+     */
     private final SelectStrategy selectStrategy;
 
+    /**
+     * 处理 Channel 的就绪的 IO 事件，占处理任务的总时间的比例
+     */
     private volatile int ioRatio = 50;
+
+    /*
+     * 取消 SelectionKey 的数量
+     */
     private int cancelledKeys;
+
+    /**
+     *  是否需要再次 select Selector 对象
+     */
     private boolean needsToSelectAgain;
 
     NioEventLoop(NioEventLoopGroup parent, Executor executor, SelectorProvider selectorProvider,
@@ -140,6 +178,10 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             throw new NullPointerException("selectStrategy");
         }
         provider = selectorProvider;
+
+        /**
+         * 创建 Selector 对象
+         */
         final SelectorTuple selectorTuple = openSelector();
         selector = selectorTuple.selector;
         unwrappedSelector = selectorTuple.unwrappedSelector;
@@ -429,6 +471,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             try {
                 try {
                     switch (selectStrategy.calculateStrategy(selectNowSupplier, hasTasks())) {
+//                        默认是线下，不存在该情况
                     case SelectStrategy.CONTINUE:
                         continue;
 
@@ -436,6 +479,8 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                         // fall-through to SELECT since the busy-wait is not supported with NIO
 
                     case SelectStrategy.SELECT:
+                        // 重置 wakenUp 标记为 false
+                        // 选择( 查询 )任务
                         select(wakenUp.getAndSet(false));
 
                         // 'wakenUp.compareAndSet(false, true)' is always evaluated
@@ -485,14 +530,18 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                 final int ioRatio = this.ioRatio;
                 if (ioRatio == 100) {
                     try {
+                        // 处理 Channel 感兴趣的就绪 IO 事件
                         processSelectedKeys();
                     } finally {
+                        // Ensure we always run tasks.
+                        // 运行所有普通任务和定时任务，不限制时间
                         // Ensure we always run tasks.
                         runAllTasks();
                     }
                 } else {
                     final long ioStartTime = System.nanoTime();
                     try {
+                        // 处理 Channel 感兴趣的就绪 IO 事件
                         processSelectedKeys();
                     } finally {
                         // Ensure we always run tasks.
