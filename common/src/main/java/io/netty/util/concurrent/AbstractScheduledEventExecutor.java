@@ -38,6 +38,9 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
                 }
             };
 
+    /**
+     * 定时任务队列
+     */
     PriorityQueue<ScheduledFutureTask<?>> scheduledTaskQueue;
 
     protected AbstractScheduledEventExecutor() {
@@ -80,6 +83,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
         final ScheduledFutureTask<?>[] scheduledTasks =
                 scheduledTaskQueue.toArray(new ScheduledFutureTask<?>[0]);
 
+        // 循环，取消所有任务
         for (ScheduledFutureTask<?> task: scheduledTasks) {
             task.cancelWithoutRemove(false);
         }
@@ -97,6 +101,8 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
     /**
      * Return the {@link Runnable} which is ready to be executed with the given {@code nanoTime}.
      * You should use {@link #nanoTime()} to retrieve the correct {@code nanoTime}.
+     *
+     * 获取指定时间内，定时任务首个可以执行的任务，并从队列中移除
      */
     protected final Runnable pollScheduledTask(long nanoTime) {
         assert inEventLoop();
@@ -116,6 +122,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
 
     /**
      * Return the nanoseconds when the next scheduled task is ready to be run or {@code -1} if no task is scheduled.
+     * 返回还有多长时间任务开始执行
      */
     protected final long nextScheduledTaskNano() {
         Queue<ScheduledFutureTask<?>> scheduledTaskQueue = this.scheduledTaskQueue;
@@ -126,6 +133,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
         return Math.max(0, scheduledTask.deadlineNanos() - nanoTime());
     }
 
+    // 获取头部的任务
     final ScheduledFutureTask<?> peekScheduledTask() {
         Queue<ScheduledFutureTask<?>> scheduledTaskQueue = this.scheduledTaskQueue;
         if (scheduledTaskQueue == null) {
@@ -136,10 +144,13 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
 
     /**
      * Returns {@code true} if a scheduled task is ready for processing.
+     * 判断是否有可执行的定时任务
      */
     protected final boolean hasScheduledTasks() {
         Queue<ScheduledFutureTask<?>> scheduledTaskQueue = this.scheduledTaskQueue;
+        // 获得队列首个定时任务。不会从队列中，移除该任务
         ScheduledFutureTask<?> scheduledTask = scheduledTaskQueue == null ? null : scheduledTaskQueue.peek();
+        // 判断该任务是否到达可执行的时间
         return scheduledTask != null && scheduledTask.deadlineNanos() <= nanoTime();
     }
 

@@ -25,11 +25,28 @@ import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * 定时调度任务
+ * @param <V>
+ */
 @SuppressWarnings("ComparableImplementedButEqualsNotOverridden")
 final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFuture<V>, PriorityQueueNode {
+    /**
+     * 任务序号生成器，递增发号
+     */
     private static final AtomicLong nextTaskId = new AtomicLong();
+
+    /**
+     * 定时任务起点
+     * 因为是定时调度，我改了系统时间也没关系
+     * 存的是距离下次调度还要多长时间
+     * 不受系统时间影响
+     */
     private static final long START_TIME = System.nanoTime();
 
+    /**
+     * 计算相对时间
+     */
     static long nanoTime() {
         return System.nanoTime() - START_TIME;
     }
@@ -41,10 +58,22 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
     }
 
     private final long id = nextTaskId.getAndIncrement();
+
+//    任务执行时间
     private long deadlineNanos;
+
+    /**
+     * 任务执行周期
+     *
+     * =0 - 只执行一次
+     * >0 - 按照计划执行时间计算
+     * <0 - 按照实际执行时间计算
+     * /
     /* 0 - no repeat, >0 - repeat at fixed rate, <0 - repeat with fixed delay */
     private final long periodNanos;
 
+
+//    队列编号
     private int queueIndex = INDEX_NOT_IN_QUEUE;
 
     ScheduledFutureTask(
@@ -84,10 +113,15 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
         return deadlineNanos;
     }
 
+//  距离当前时间，还要多久可执行。若为负数，直接返回 0
     public long delayNanos() {
         return Math.max(0, deadlineNanos() - nanoTime());
     }
 
+    /**
+     * @param currentTimeNanos 指定时间
+     * @return 距离指定时间，还要多久可执行。若为负数，直接返回 0
+     */
     public long delayNanos(long currentTimeNanos) {
         return Math.max(0, deadlineNanos() - (currentTimeNanos - START_TIME));
     }
@@ -123,22 +157,32 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
         assert executor().inEventLoop();
         try {
             if (periodNanos == 0) {
+//                设置任务不可被取消
                 if (setUncancellableInternal()) {
+//                    执行任务
                     V result = task.call();
+//                    通知任务执行成功
                     setSuccessInternal(result);
                 }
             } else {
                 // check if is done as it may was cancelled
+//                判断是否被取消
                 if (!isCancelled()) {
                     task.call();
                     if (!executor().isShutdown()) {
+//                        计算下次执行时间
                         long p = periodNanos;
                         if (p > 0) {
+//                            下次执行时间是上一次执行完毕的时间+p
                             deadlineNanos += p;
                         } else {
+//                            如果p小于0，下次执行时间就是当前时间 + abs(p)
                             deadlineNanos = nanoTime() - p;
                         }
+
+                        // 判断任务并未取消
                         if (!isCancelled()) {
+                            // 重新添加到任务队列，等待下次定时执行
                             // scheduledTaskQueue can never be null as we lazy init it before submit the task!
                             Queue<ScheduledFutureTask<?>> scheduledTaskQueue =
                                     ((AbstractScheduledEventExecutor) executor()).scheduledTaskQueue;

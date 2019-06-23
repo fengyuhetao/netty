@@ -24,6 +24,8 @@ import java.util.NoSuchElementException;
 final class SelectedSelectionKeySet extends AbstractSet<SelectionKey> {
 
     SelectionKey[] keys;
+
+//    数组可读大小
     int size;
 
     SelectedSelectionKeySet() {
@@ -37,6 +39,8 @@ final class SelectedSelectionKeySet extends AbstractSet<SelectionKey> {
         }
 
         keys[size++] = o;
+
+//        超过大小，扩容
         if (size == keys.length) {
             increaseCapacity();
         }
@@ -94,7 +98,9 @@ final class SelectedSelectionKeySet extends AbstractSet<SelectionKey> {
     }
 
     private void increaseCapacity() {
+//        两倍扩容
         SelectionKey[] newKeys = new SelectionKey[keys.length << 1];
+//        复制老数组到新数组中
         System.arraycopy(keys, 0, newKeys, 0, size);
         keys = newKeys;
     }
