@@ -27,10 +27,13 @@ import java.nio.channels.Selector;
 public interface NioTask<C extends SelectableChannel> {
     /**
      * Invoked when the {@link SelectableChannel} has been selected by the {@link Selector}.
+     * 可以通过该方法实现io.netty.channel.nio.NioEventLoop#processSelectedKey(java.nio.channels.SelectionKey, io.netty.channel.nio.AbstractNioChannel)的逻辑
      */
     void channelReady(C ch, SelectionKey key) throws Exception;
 
     /**
+     * 一般来说，可以通过该方法关闭channel
+     *
      * Invoked when the {@link SelectionKey} of the specified {@link SelectableChannel} has been cancelled and thus
      * this {@link NioTask} will not be notified anymore.
      *

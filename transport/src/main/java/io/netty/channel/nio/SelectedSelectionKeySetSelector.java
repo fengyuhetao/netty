@@ -23,6 +23,8 @@ import java.util.Set;
 
 final class SelectedSelectionKeySetSelector extends Selector {
     private final SelectedSelectionKeySet selectionKeys;
+
+//    原始java nio selector对象
     private final Selector delegate;
 
     SelectedSelectionKeySetSelector(Selector delegate, SelectedSelectionKeySet selectionKeys) {
@@ -52,6 +54,7 @@ final class SelectedSelectionKeySetSelector extends Selector {
 
     @Override
     public int selectNow() throws IOException {
+//        重置selectionKeys
         selectionKeys.reset();
         return delegate.selectNow();
     }

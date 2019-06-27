@@ -47,9 +47,15 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
     static final InternalLogger logger = InternalLoggerFactory.getInstance(DefaultChannelPipeline.class);
 
+
+//    HeadContext#0
     private static final String HEAD_NAME = generateName0(HeadContext.class);
+
+//    TailContext#0
     private static final String TAIL_NAME = generateName0(TailContext.class);
 
+
+//    节点名称的缓存
     private static final FastThreadLocal<Map<Class<?>, String>> nameCaches =
             new FastThreadLocal<Map<Class<?>, String>>() {
         @Override
@@ -58,19 +64,42 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         }
     };
 
+    // 原子更新器
     private static final AtomicReferenceFieldUpdater<DefaultChannelPipeline, MessageSizeEstimator.Handle> ESTIMATOR =
             AtomicReferenceFieldUpdater.newUpdater(
                     DefaultChannelPipeline.class, MessageSizeEstimator.Handle.class, "estimatorHandle");
     final AbstractChannelHandlerContext head;
     final AbstractChannelHandlerContext tail;
 
+//    所属channel对象
     private final Channel channel;
+
+//    成功的promise对象
     private final ChannelFuture succeededFuture;
+
+    /**
+     * 不进行通知的 Promise 对象
+     *
+     * 用于一些方法执行，需要传入 Promise 类型的方法参数，但是不需要进行通知，就传入该值
+     */
     private final VoidChannelPromise voidPromise;
+
+//    用途未知
     private final boolean touch = ResourceLeakDetector.isEnabled();
 
+    /**
+     * 子执行器集合。
+     *
+     * 默认情况下，ChannelHandler 使用 Channel 所在的 EventLoop 作为执行器。
+     * 但是如果有需要，也可以自定义执行器。详细解析，见 {@link #childExecutor(EventExecutorGroup)} 。
+     * 实际情况下，基本不会用到。
+     */
     private Map<EventExecutorGroup, EventExecutor> childExecutors;
+
+//    字段用途
     private volatile MessageSizeEstimator.Handle estimatorHandle;
+
+//    是否首次注册
     private boolean firstRegistration = true;
 
     /**
@@ -80,12 +109,15 @@ public class DefaultChannelPipeline implements ChannelPipeline {
      * We only keep the head because it is expected that the list is used infrequently and its size is small.
      * Thus full iterations to do insertions is assumed to be a good compromised to saving memory and tail management
      * complexity.
+     *
+     * 准备添加 ChannelHandler 的回调
      */
     private PendingHandlerCallback pendingHandlerCallbackHead;
 
     /**
-     * Set to {@code true} once the {@link AbstractChannel} is registered.Once set to {@code true} the value will never
-     * change.
+     * Set to {@code true} once the {@link AbstractChannel} is registered.Once set to {@code true} the value will never change.
+     *
+     * Channel 是否已注册
      */
     private boolean registered;
 
