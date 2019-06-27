@@ -68,11 +68,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     //   可选项集合, ChannelOption
     private final Map<ChannelOption<?>, Object> options = new LinkedHashMap<ChannelOption<?>, Object>();
 
-<<<<<<< HEAD
     //  自定义属性
-=======
-    //    TODO 属性集合，具体哪些属性未知
->>>>>>> 9323368bd114aea34e853a23a950bf749f36dae8
     private final Map<AttributeKey<?>, Object> attrs = new LinkedHashMap<AttributeKey<?>, Object>();
     private volatile ChannelHandler handler;
 
