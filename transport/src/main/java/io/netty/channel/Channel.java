@@ -82,7 +82,7 @@ public interface Channel extends AttributeMap, ChannelOutboundInvoker, Comparabl
     ChannelId id();
 
     /**
-     * Return the {@link EventLoop} this {@link Channel} was registered to.
+     * Channel 注册到的 EventLoop
      */
     EventLoop eventLoop();
 
@@ -106,11 +106,19 @@ public interface Channel extends AttributeMap, ChannelOutboundInvoker, Comparabl
 
     /**
      * Returns {@code true} if the {@link Channel} is registered with an {@link EventLoop}.
+     * Channel 是否注册
+     *
+     * true 表示 Channel 已注册到 EventLoop 上
+     * false 表示 Channel 未注册到 EventLoop 上
      */
     boolean isRegistered();
 
     /**
      * Return {@code true} if the {@link Channel} is active and so connected.
+     * Channel 是否激活
+     *
+     * 对于服务端 ServerSocketChannel ，true 表示 Channel 已经绑定到端口上，可提供服务
+     * 对于客户端 SocketChannel ，true 表示 Channel 连接到远程服务器
      */
     boolean isActive();
 
@@ -149,6 +157,8 @@ public interface Channel extends AttributeMap, ChannelOutboundInvoker, Comparabl
     /**
      * Returns the {@link ChannelFuture} which will be notified when this
      * channel is closed.  This method always returns the same future instance.
+     *
+     * Channel 关闭的 Future 对象
      */
     ChannelFuture closeFuture();
 
@@ -157,10 +167,16 @@ public interface Channel extends AttributeMap, ChannelOutboundInvoker, Comparabl
      * requested write operation immediately.  Any write requests made when
      * this method returns {@code false} are queued until the I/O thread is
      * ready to process the queued write requests.
+     *
+     * Channel 是否可写
+     *
+     * 当 Channel 的写缓存区 outbound 非 null 且可写时，返回 true
      */
     boolean isWritable();
 
     /**
+     * 获得距离不可写还有多少字节数
+     *
      * Get how many bytes can be written until {@link #isWritable()} returns {@code false}.
      * This quantity will always be non-negative. If {@link #isWritable()} is {@code false} then 0.
      */
@@ -211,6 +227,8 @@ public interface Channel extends AttributeMap, ChannelOutboundInvoker, Comparabl
         /**
          * Return the assigned {@link RecvByteBufAllocator.Handle} which will be used to allocate {@link ByteBuf}'s when
          * receiving data.
+         *
+         * ByteBuf 分配器的处理器
          */
         RecvByteBufAllocator.Handle recvBufAllocHandle();
 
