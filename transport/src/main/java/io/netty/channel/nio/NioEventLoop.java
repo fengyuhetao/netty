@@ -767,7 +767,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             }
 
             // Process OP_WRITE first as we may be able to write some queued buffers and so free memory.
-//            处理OP_WRITE事件
+//            先处理处理OP_WRITE事件，这样我们可以写一些数据，然后清空内存
             if ((readyOps & SelectionKey.OP_WRITE) != 0) {
                 // Call forceFlush which will also take care of clear the OP_WRITE once there is nothing left to write
 //                写入数据

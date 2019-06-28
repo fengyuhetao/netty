@@ -104,8 +104,11 @@ public abstract class DefaultMaxMessagesRecvByteBufAllocator implements MaxMessa
          */
         @Override
         public void reset(ChannelConfig config) {
+            // 重置 ChannelConfig 对象
             this.config = config;
+            // 重置 maxMessagePerRead 属性
             maxMessagePerRead = maxMessagesPerRead();
+            // 重置 totalMessages 和 totalBytesRead 属性
             totalMessages = totalBytesRead = 0;
         }
 
@@ -132,6 +135,7 @@ public abstract class DefaultMaxMessagesRecvByteBufAllocator implements MaxMessa
             return lastBytesRead;
         }
 
+//        判断是否循环是否继续，读取( 接受 )新的客户端连接。
         @Override
         public boolean continueReading() {
             return continueReading(defaultMaybeMoreSupplier);
@@ -143,6 +147,11 @@ public abstract class DefaultMaxMessagesRecvByteBufAllocator implements MaxMessa
                    (!respectMaybeMoreData || maybeMoreDataSupplier.get()) &&
                    totalMessages < maxMessagePerRead &&
                    totalBytesRead > 0;
+            // 对于新的连接来说，totalBytesRead 等于 0 ，所以会返回 false 。因此，循环会结束。
+            // 也因此，对于 NioServerSocketChannel 来说，每次只接受一个新的客户端连接。
+            // 当然，因为服务端 NioServerSocketChannel 对 Selectionkey.OP_ACCEPT 事件感兴趣，
+            // 所以后续的新的客户端连接还是会被接受的。
+            // 对于连接传输数据而言，totalBytesRead > 0
         }
 
         @Override

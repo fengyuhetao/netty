@@ -203,7 +203,7 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
     }
 
     private static class ServerBootstrapAcceptor extends ChannelInboundHandlerAdapter {
-
+        // 记录当前的属性
         private final EventLoopGroup childGroup;
         private final ChannelHandler childHandler;
         private final Entry<ChannelOption<?>, Object>[] childOptions;
