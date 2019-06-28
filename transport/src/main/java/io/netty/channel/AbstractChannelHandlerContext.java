@@ -100,6 +100,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
      */
     private final boolean ordered;
 
+    // 标记当前节点触发的事件，通过这个字段也可以区分是InBound，还是OutBound，和之前版本有区别
     private final int executionMask;
 
     // Will be set to null if no child executor should be used, otherwise it will be set to the
@@ -499,12 +500,17 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         if (localAddress == null) {
             throw new NullPointerException("localAddress");
         }
+
+        // 判断是否为合法的 Promise 对象
         if (isNotValidPromise(promise, false)) {
             // cancelled
             return promise;
         }
 
+//        找到pipeline下一个节点
         final AbstractChannelHandlerContext next = findContextOutbound(MASK_BIND);
+
+        // 获得下一个 Outbound 节点的执行器
         EventExecutor executor = next.executor();
         if (executor.inEventLoop()) {
             next.invokeBind(localAddress, promise);
@@ -520,13 +526,17 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
     }
 
     private void invokeBind(SocketAddress localAddress, ChannelPromise promise) {
+//        判断是否是符合的ChannelHandler
         if (invokeHandler()) {
             try {
+//                调用该handler的bind的方法
+//                最终会调用HeadContext的bind方法
                 ((ChannelOutboundHandler) handler()).bind(this, localAddress, promise);
             } catch (Throwable t) {
                 notifyOutboundHandlerException(t, promise);
             }
         } else {
+//            不符合的 ChannelHandler ，则跳过该节点
             bind(localAddress, promise);
         }
     }
@@ -902,6 +912,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
             throw new NullPointerException("promise");
         }
 
+        // promise已经完成
         if (promise.isDone()) {
             // Check if the promise was cancelled and if so signal that the processing of the operation
             // should not be performed.
@@ -913,20 +924,24 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
             throw new IllegalArgumentException("promise already done: " + promise);
         }
 
+        // channel不符合
         if (promise.channel() != channel()) {
             throw new IllegalArgumentException(String.format(
                     "promise.channel does not match: %s (expected: %s)", promise.channel(), channel()));
         }
 
+//        promise类型合法
         if (promise.getClass() == DefaultChannelPromise.class) {
             return false;
         }
 
+//        禁用voidChannelPromise
         if (!allowVoidPromise && promise instanceof VoidChannelPromise) {
             throw new IllegalArgumentException(
                     StringUtil.simpleClassName(VoidChannelPromise.class) + " not allowed for this operation");
         }
 
+//        禁用closeFuture
         if (promise instanceof AbstractChannel.CloseFuture) {
             throw new IllegalArgumentException(
                     StringUtil.simpleClassName(AbstractChannel.CloseFuture.class) + " not allowed in a pipeline");
@@ -1037,9 +1052,11 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
             return true;
         } catch (Throwable cause) {
             try {
+                // 发生异常，回调通知 promise 相关的异常
                 promise.setFailure(cause);
             } finally {
                 if (msg != null) {
+                    // 释放 msg 相关的资源
                     ReferenceCountUtil.release(msg);
                 }
             }

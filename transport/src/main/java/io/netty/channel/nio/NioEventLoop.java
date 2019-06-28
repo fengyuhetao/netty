@@ -219,11 +219,8 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             throw new ChannelException("failed to open a new selector", e);
         }
 
-<<<<<<< HEAD
-        // TODO 如果开启key_set优化
-=======
+        // 如果开启key_set优化
         // 禁用 SelectionKey 的优化，则直接返回 SelectorTuple 对象。即，selector 也使用 unwrappedSelector。
->>>>>>> 8fa0ebb93fc4d8d5d7fdf19e90f9f1c1df75a736
         if (DISABLE_KEY_SET_OPTIMIZATION) {
             return new SelectorTuple(unwrappedSelector);
         }

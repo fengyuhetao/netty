@@ -242,6 +242,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
         return this;
     }
 
+//    通过pipeline开始传播bind事件
     @Override
     public ChannelFuture bind(SocketAddress localAddress, ChannelPromise promise) {
         return pipeline.bind(localAddress, promise);
@@ -547,6 +548,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                         "address (" + localAddress + ") anyway as requested.");
             }
 
+//            记录channel是否激活
             boolean wasActive = isActive();
             try {
                 // 绑定端口
@@ -557,6 +559,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 return;
             }
 
+            // 若 Channel 是新激活的，触发通知 Channel 已激活的事件。
             if (!wasActive && isActive()) {
                 invokeLater(new Runnable() {
                     @Override

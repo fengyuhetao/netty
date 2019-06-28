@@ -153,13 +153,18 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     }
 
     private EventExecutor childExecutor(EventExecutorGroup group) {
+//        不创建子执行器
         if (group == null) {
             return null;
         }
+
+//        根据配置项 SINGLE_EVENTEXECUTOR_PER_GROUP ，每个 Channel 从 EventExecutorGroup 获得不同 EventExecutor 执行器
         Boolean pinEventExecutor = channel.config().getOption(ChannelOption.SINGLE_EVENTEXECUTOR_PER_GROUP);
         if (pinEventExecutor != null && !pinEventExecutor) {
             return group.next();
         }
+
+        // 通过 childExecutors 缓存实现，一个 Channel 从 EventExecutorGroup 获得相同 EventExecutor 执行器
         Map<EventExecutorGroup, EventExecutor> childExecutors = this.childExecutors;
         if (childExecutors == null) {
             // Use size of 4 as most people only use one extra EventExecutor.
@@ -168,6 +173,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         // Pin one of the child executors once and remember it so that the same child executor
         // is used to fire events for the same channel.
         EventExecutor childExecutor = childExecutors.get(group);
+        // 缓存不存在，进行 从 EventExecutorGroup 获得 EventExecutor 执行器
         if (childExecutor == null) {
             childExecutor = group.next();
             childExecutors.put(group, childExecutor);
@@ -200,6 +206,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
             // ChannelHandler.handlerAdded(...) once the channel is registered.
             if (!registered) {
                 newCtx.setAddPending();
+                // 添加 PendingHandlerCallback 回调
                 callHandlerCallbackLater(newCtx, true);
                 return this;
             }
@@ -230,28 +237,47 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     @Override
     public final ChannelPipeline addLast(EventExecutorGroup group, String name, ChannelHandler handler) {
         final AbstractChannelHandlerContext newCtx;
+        // 同步，为了防止多线程并发操作 pipeline 底层的双向链表
         synchronized (this) {
+//            检查是否有重复handler
             checkMultiplicity(handler);
 
+            // 创建节点名
+            // 创建节点
             newCtx = newContext(group, filterName(name, handler), handler);
 
+//            最终插入节点
             addLast0(newCtx);
 
+            // pipeline 暂未注册，添加回调。再注册完成后，执行回调，可见{@link invokeHandlerAddedIfNeeded}
+//            这种情况，发生于 ServerBootstrap 启动的过程中。在 ServerBootstrap#init(Channel channel) 方法中，
+            // 会添加 ChannelInitializer 对象到 pipeline 中，恰好此时 Channel 并未注册。
             // If the registered is false it means that the channel was not registered on an eventLoop yet.
             // In this case we add the context to the pipeline and add a task that will call
             // ChannelHandler.handlerAdded(...) once the channel is registered.
             if (!registered) {
+                // 设置 AbstractChannelHandlerContext 准备添加中
                 newCtx.setAddPending();
+
+                // 添加 PendingHandlerCallback 回调
+//                为什么会有 PendingHandlerCallback 呢？
+//                因为 ChannelHandler 添加到 pipeline 中，会触发 ChannelHandler 的添加完成( added )事件，
+//                并且该事件需要在 Channel 所属的 EventLoop 中执行。
+//                但是 Channel 并未注册在 EventLoop 上时，需要暂时将“触发 ChannelHandler 的添加完成( added )事件”的逻辑，
+//                作为一个 PendingHandlerCallback 进行“缓存”。在 Channel 注册到 EventLoop 上时，进行回调执行。
                 callHandlerCallbackLater(newCtx, true);
                 return this;
             }
 
+//            如果pipeline已经注册
             EventExecutor executor = newCtx.executor();
+//            不在 EventLoop 的线程中，提交 EventLoop 中，执行回调用户方法
             if (!executor.inEventLoop()) {
                 callHandlerAddedInEventLoop(newCtx, executor);
                 return this;
             }
         }
+//        回调 ChannelHandler added 事件
         callHandlerAdded0(newCtx);
         return this;
     }
@@ -432,6 +458,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         // It's not very likely for a user to put more than one handler of the same type, but make sure to avoid
         // any name conflicts.  Note that we don't cache the names generated here.
         if (context0(name) != null) {
+            // 若存在，则使用基础名字 + 编号，循环生成，直到一个是唯一的
             String baseName = name.substring(0, name.length() - 1); // Strip the trailing '0'.
             for (int i = 1;; i ++) {
                 String newName = baseName + i;
@@ -485,12 +512,17 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return (T) remove((AbstractChannelHandlerContext) ctx).handler();
     }
 
+    /**
+     * 移除某个节点
+     */
     private AbstractChannelHandlerContext remove(final AbstractChannelHandlerContext ctx) {
         assert ctx != head && ctx != tail;
 
+        // 同步，为了防止多线程并发操作 pipeline 底层的双向链表
         synchronized (this) {
             remove0(ctx);
 
+            // pipeline 暂未注册，添加回调。再注册完成后，执行回调。详细解析，见 {@link #callHandlerCallbackLater} 方法。
             // If the registered is false it means that the channel was not registered on an eventloop yet.
             // In this case we remove the context from the pipeline and add a task that will call
             // ChannelHandler.handlerRemoved(...) once the channel is registered.
@@ -510,6 +542,8 @@ public class DefaultChannelPipeline implements ChannelPipeline {
                 return ctx;
             }
         }
+
+//        触发回调
         callHandlerRemoved0(ctx);
         return ctx;
     }
@@ -625,9 +659,11 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         oldCtx.next = newCtx;
     }
 
+    // 检查是否有重复 handler
     private static void checkMultiplicity(ChannelHandler handler) {
         if (handler instanceof ChannelHandlerAdapter) {
             ChannelHandlerAdapter h = (ChannelHandlerAdapter) handler;
+//            如果handler没有启用单例模式，并且handler已经被添加
             if (!h.isSharable() && h.added) {
                 throw new ChannelPipelineException(
                         h.getClass().getName() +
@@ -674,12 +710,23 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         }
     }
 
+    /**
+     * 该方法只会在eventloop中被执行
+     *
+     * 只有两个地方调用该方法:
+     * * AbstractChannel#register0(ChannelPromise promise)
+     * * # channelRegistered
+     * 通过调试，AbstractChannel 会调用该方法，此后，所有对该方法的调用都是无效的
+     *
+     * adContext#channelRegistered(ChannelHandlerContext ctx) 方法对这个方法的调用，是没有效果的。
+     */
     final void invokeHandlerAddedIfNeeded() {
         assert channel.eventLoop().inEventLoop();
         if (firstRegistration) {
             firstRegistration = false;
             // We are now registered to the EventLoop. It's time to call the callbacks for the ChannelHandlers,
             // that were added before the registration was done.
+//            执行在 PendingHandlerCallback 中的 ChannelHandler 添加完成( added )事件
             callHandlerAddedForAllHandlers();
         }
     }
@@ -1011,6 +1058,12 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return this;
     }
 
+    /**
+     * 从尾部节点开始传播
+     * @param localAddress
+     * @param promise
+     * @return
+     */
     @Override
     public final ChannelFuture bind(SocketAddress localAddress, ChannelPromise promise) {
         return tail.bind(localAddress, promise);
@@ -1119,6 +1172,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         }
     }
 
+    // 判断该handler是否存在，存在返回对应ctx
     private AbstractChannelHandlerContext getContextOrDie(ChannelHandler handler) {
         AbstractChannelHandlerContext ctx = (AbstractChannelHandlerContext) context(handler);
         if (ctx == null) {
@@ -1139,6 +1193,9 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
     private void callHandlerAddedForAllHandlers() {
         final PendingHandlerCallback pendingHandlerCallbackHead;
+
+//        #addLast(EventExecutorGroup group, String name, ChannelHandler handler) 的代码需要对
+//        pendingHandlerCallbackHead 互斥，避免并发修改的问题。
         synchronized (this) {
             assert !registered;
 
@@ -1150,6 +1207,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
             this.pendingHandlerCallbackHead = null;
         }
 
+//        顺序向下，执行 PendingHandlerCallback 的回调
         // This must happen outside of the synchronized(...) block as otherwise handlerAdded(...) may be called while
         // holding the lock and so produce a deadlock if handlerAdded(...) will try to add another handler from outside
         // the EventLoop.
@@ -1160,6 +1218,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         }
     }
 
+//    添加 PendingHandlerCallback 回调
     private void callHandlerCallbackLater(AbstractChannelHandlerContext ctx, boolean added) {
         assert !registered;
 
@@ -1297,6 +1356,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
         @Override
         public void channelInactive(ChannelHandlerContext ctx) {
+//            该方法是空方法，pipeline 的 Inbound 事件的传播结束
             onUnhandledInboundChannelInactive();
         }
 
@@ -1425,8 +1485,10 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
         @Override
         public void channelActive(ChannelHandlerContext ctx) {
+            // 传播 Channel active 事件给下一个 Inbound 节点
             ctx.fireChannelActive();
 
+            // 执行 read 逻辑
             readIfIsAutoRead();
         }
 
@@ -1490,8 +1552,10 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         void execute() {
             EventExecutor executor = ctx.executor();
             if (executor.inEventLoop()) {
+                // 在 EventLoop 的线程中，回调 ChannelHandler added 事件
                 callHandlerAdded0(ctx);
             } else {
+                // 提交 EventLoop 中，执行回调 ChannelHandler added 事件
                 try {
                     executor.execute(this);
                 } catch (RejectedExecutionException e) {
@@ -1500,6 +1564,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
                                 "Can't invoke handlerAdded() as the EventExecutor {} rejected it, removing handler {}.",
                                 executor, ctx.name(), e);
                     }
+//                    如果失败，删除该节点
                     remove0(ctx);
                     ctx.setRemoved();
                 }
