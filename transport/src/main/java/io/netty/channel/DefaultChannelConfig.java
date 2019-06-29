@@ -47,6 +47,10 @@ public class DefaultChannelConfig implements ChannelConfig {
 
     private static final int DEFAULT_CONNECT_TIMEOUT = 30000;
 
+    // DefaultChannelConfig.java
+    /**
+     * {@link #autoRead} 的原子更新器
+     */
     private static final AtomicIntegerFieldUpdater<DefaultChannelConfig> AUTOREAD_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(DefaultChannelConfig.class, "autoRead");
     private static final AtomicReferenceFieldUpdater<DefaultChannelConfig, WriteBufferWaterMark> WATERMARK_UPDATER =
@@ -320,10 +324,13 @@ public class DefaultChannelConfig implements ChannelConfig {
 
     @Override
     public ChannelConfig setAutoRead(boolean autoRead) {
+        // 原子更新，并且获得更新前的值
         boolean oldAutoRead = AUTOREAD_UPDATER.getAndSet(this, autoRead ? 1 : 0) == 1;
         if (autoRead && !oldAutoRead) {
+//            意味着恢复重启开启接受新的客户端连接
             channel.read();
         } else if (!autoRead && oldAutoRead) {
+//            意味着关闭接受新的客户端连接。所以调用 #autoReadCleared() 方法，移除对 SelectionKey.OP_ACCEPT 事件的感兴趣。
             autoReadCleared();
         }
         return this;
