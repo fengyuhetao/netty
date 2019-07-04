@@ -280,6 +280,8 @@ public interface Channel extends AttributeMap, ChannelOutboundInvoker, Comparabl
         /**
          * Closes the {@link Channel} immediately without firing any events.  Probably only useful
          * when registration attempt failed.
+         * 立即关闭 Channel ，并且不触发 pipeline 上的任何事件。
+         * 仅仅用于 Channel 注册到 EventLoop 上失败的情况下。😈 这也就是为什么 without firing any events 的原因啦。
          */
         void closeForcibly();
 
