@@ -67,10 +67,17 @@ public abstract class AbstractByteBuf extends ByteBuf {
     static final ResourceLeakDetector<ByteBuf> leakDetector =
             ResourceLeakDetectorFactory.instance().newResourceLeakDetector(ByteBuf.class);
 
+//    读开始指针
     int readerIndex;
+
+//    标记写开始指针
     int writerIndex;
+
+//    标记读开始指针
     private int markedReaderIndex;
     private int markedWriterIndex;
+
+//    最大容量
     private int maxCapacity;
 
     protected AbstractByteBuf(int maxCapacity) {
@@ -89,6 +96,8 @@ public abstract class AbstractByteBuf extends ByteBuf {
         if (isReadOnly()) {
             return this;
         }
+
+        // 转化成只读 Buffer 对象
         return Unpooled.unmodifiableBuffer(this);
     }
 
@@ -213,15 +222,23 @@ public abstract class AbstractByteBuf extends ByteBuf {
 
     @Override
     public ByteBuf discardReadBytes() {
+        // 校验可访问
         ensureAccessible();
+
+        // 无废弃段，直接返回
         if (readerIndex == 0) {
             return this;
         }
 
+        // 未读取完
         if (readerIndex != writerIndex) {
+            // 将可读段复制到 ByteBuf 头
             setBytes(0, this, readerIndex, writerIndex - readerIndex);
+            // 写索引减小
             writerIndex -= readerIndex;
+            // 调整标记位
             adjustMarkers(readerIndex);
+            // 读索引重置为 0
             readerIndex = 0;
         } else {
             adjustMarkers(readerIndex);
@@ -230,6 +247,7 @@ public abstract class AbstractByteBuf extends ByteBuf {
         return this;
     }
 
+//    整体代码和 #discardReadBytes() 方法是一致的。差别在于，readerIndex >= capacity() >>> 1 ，读取超过容量的一半时，进行释放。也就是说，在空间和时间之间，做了一个平衡。
     @Override
     public ByteBuf discardSomeReadBytes() {
         ensureAccessible();
@@ -252,12 +270,18 @@ public abstract class AbstractByteBuf extends ByteBuf {
         return this;
     }
 
+//    调整标记位
     protected final void adjustMarkers(int decrement) {
         int markedReaderIndex = this.markedReaderIndex;
+
+        // 读标记位小于减少值(decrement)
         if (markedReaderIndex <= decrement) {
+            // 重置读标记位为 0
             this.markedReaderIndex = 0;
             int markedWriterIndex = this.markedWriterIndex;
+            // 写标记位小于减少值(decrement)
             if (markedWriterIndex <= decrement) {
+                // 重置写标记位为 0
                 this.markedWriterIndex = 0;
             } else {
                 this.markedWriterIndex = markedWriterIndex - decrement;
@@ -275,13 +299,16 @@ public abstract class AbstractByteBuf extends ByteBuf {
         return this;
     }
 
-    final void ensureWritable0(int minWritableBytes) {
+//    保证可写，如果不可写，则扩容
+    final void  ensureWritable0(int minWritableBytes) {
         ensureAccessible();
         if (minWritableBytes <= writableBytes()) {
             return;
         }
         final int writerIndex = writerIndex();
+
         if (checkBounds) {
+            // 超过最大上限，抛出 IndexOutOfBoundsException 异常
             if (minWritableBytes > maxCapacity - writerIndex) {
                 throw new IndexOutOfBoundsException(String.format(
                         "writerIndex(%d) + minWritableBytes(%d) exceeds maxCapacity(%d): %s",
@@ -290,6 +317,7 @@ public abstract class AbstractByteBuf extends ByteBuf {
         }
 
         // Normalize the current capacity to the power of 2.
+        // 计算新的容量。默认情况下，2 倍扩容，并且不超过最大容量上限。
         int minNewCapacity = writerIndex + minWritableBytes;
         int newCapacity = alloc().calculateNewCapacity(minNewCapacity, maxCapacity);
 
@@ -299,32 +327,41 @@ public abstract class AbstractByteBuf extends ByteBuf {
             newCapacity = fastCapacity;
         }
 
+        // 设置新的容量大小
         // Adjust to the new capacity.
         capacity(newCapacity);
     }
 
+//    保证有足够的可写空间。若不够，则进行扩容
     @Override
     public int ensureWritable(int minWritableBytes, boolean force) {
         ensureAccessible();
         checkPositiveOrZero(minWritableBytes, "minWritableBytes");
 
+        // 目前容量可写，直接返回
         if (minWritableBytes <= writableBytes()) {
             return 0;
         }
 
         final int maxCapacity = maxCapacity();
         final int writerIndex = writerIndex();
+
+        // 超过最大上限，抛出 IndexOutOfBoundsException 异常
         if (minWritableBytes > maxCapacity - writerIndex) {
+            // 不强制设置，或者已经到达最大容量
             if (!force || capacity() == maxCapacity) {
                 return 1;
             }
 
+            // 设置为最大容量
             capacity(maxCapacity);
             return 3;
         }
 
         // Normalize the current capacity to the power of 2.
         int minNewCapacity = writerIndex + minWritableBytes;
+
+        // 计算新的容量。默认情况下，2 倍扩容，并且不超过最大容量上限。
         int newCapacity = alloc().calculateNewCapacity(minNewCapacity, maxCapacity);
 
         int fastCapacity = writerIndex + maxFastWritableBytes();
@@ -343,9 +380,12 @@ public abstract class AbstractByteBuf extends ByteBuf {
         if (endianness == order()) {
             return this;
         }
+        // 未改变，直接返回
         if (endianness == null) {
             throw new NullPointerException("endianness");
         }
+
+        // 创建 SwappedByteBuf 对象
         return newSwappedByteBuf();
     }
 
@@ -434,6 +474,7 @@ public abstract class AbstractByteBuf extends ByteBuf {
         return value;
     }
 
+//    读4个字节的整形数据
     @Override
     public int getInt(int index) {
         checkIndex(index, 4);
@@ -814,8 +855,10 @@ public abstract class AbstractByteBuf extends ByteBuf {
 
     @Override
     public int readInt() {
+        // 校验读取是否会超过可读段
         checkReadableBytes0(4);
         int v = _getInt(readerIndex);
+//        和getInt的区别，就是readInt会修改readerIndex
         readerIndex += 4;
         return v;
     }
@@ -1197,11 +1240,13 @@ public abstract class AbstractByteBuf extends ByteBuf {
         return written;
     }
 
+//    拷贝可读部分的字节数组, 深拷贝
     @Override
     public ByteBuf copy() {
         return copy(readerIndex, readableBytes());
     }
 
+//    拷贝整个的字节数组，浅拷贝，UnpooledDuplicatedByteBuf会使用当前Bytebuf对象
     @Override
     public ByteBuf duplicate() {
         ensureAccessible();
@@ -1218,14 +1263,21 @@ public abstract class AbstractByteBuf extends ByteBuf {
         return slice(readerIndex, readableBytes());
     }
 
+    /**
+     * 在slice的基础上，引用计数+1
+     * @return
+     */
     @Override
     public ByteBuf retainedSlice() {
         return slice().retain();
     }
 
+//    浅拷贝
     @Override
     public ByteBuf slice(int index, int length) {
         ensureAccessible();
+
+        // 创建 UnpooledSlicedByteBuf 对象
         return new UnpooledSlicedByteBuf(this, index, length);
     }
 
@@ -1236,6 +1288,9 @@ public abstract class AbstractByteBuf extends ByteBuf {
 
     @Override
     public ByteBuffer nioBuffer() {
+
+//        将当前 ByteBuf 的可读缓冲区( readerIndex 到 writerIndex 之间的内容) 转换为 ByteBuffer 对象，两者共享共享缓冲区的内容。对 ByteBuffer 的读写操作不会影响 ByteBuf 的读写索引
+//        注意：ByteBuffer 无法感知 ByteBuf 的动态扩展操作。ByteBuffer 的长度为readableBytes() 。
         return nioBuffer(readerIndex, readableBytes());
     }
 
@@ -1385,7 +1440,10 @@ public abstract class AbstractByteBuf extends ByteBuf {
     }
 
     protected final void checkIndex(int index, int fieldLength) {
+        // 校验是否可访问
         ensureAccessible();
+
+        // 校验是否会超过容量
         checkIndex0(index, fieldLength);
     }
 
@@ -1440,6 +1498,7 @@ public abstract class AbstractByteBuf extends ByteBuf {
     private void checkReadableBytes0(int minimumReadableBytes) {
         ensureAccessible();
         if (checkBounds) {
+            // 是否超过写索引，即超过可读段
             if (readerIndex > writerIndex - minimumReadableBytes) {
                 throw new IndexOutOfBoundsException(String.format(
                         "readerIndex(%d) + length(%d) exceeds writerIndex(%d): %s",
