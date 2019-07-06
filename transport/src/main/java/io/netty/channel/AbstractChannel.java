@@ -54,6 +54,8 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
     private volatile SocketAddress remoteAddress;
     private volatile EventLoop eventLoop;
     private volatile boolean registered;
+
+//    channel关闭标记
     private boolean closeInitiated;
     private Throwable initialCloseCause;
 
@@ -221,6 +223,9 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
         return pipeline.connect(remoteAddress, localAddress);
     }
 
+//    Java 原生 NIO SocketChannel 不存在，当调用 Netty NioSocketChannel#disconnect(ChannelPromise promise) 时，
+//    会自动转换成 close 操作，即 《精尽 Netty 源码解析 —— Channel（七）之 close 操作》 。
+//    实际上， Channel#disconnect(ChannelPromise promise) 方法，是 Netty 为 UDP 设计的。
     @Override
     public ChannelFuture disconnect() {
         return pipeline.disconnect();
@@ -684,16 +689,20 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
 
         private void close(final ChannelPromise promise, final Throwable cause,
                            final ClosedChannelException closeCause, final boolean notify) {
+//            设置promise不可取消
             if (!promise.setUncancellable()) {
                 return;
             }
 
+//            若关闭已经标记初始化
             if (closeInitiated) {
+//                如果已经关闭，直接通知promise
                 if (closeFuture.isDone()) {
                     // Closed already.
                     safeSetSuccess(promise);
                 } else if (!(promise instanceof VoidChannelPromise)) { // Only needed if no VoidChannelPromise.
                     // This means close() was called before so we just register a listener and return
+                    // 关闭未完成，通过监听器通知 Promise 对象
                     closeFuture.addListener(new ChannelFutureListener() {
                         @Override
                         public void operationComplete(ChannelFuture future) throws Exception {
@@ -704,11 +713,14 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 return;
             }
 
+//            标记关闭已经开始初始化
             closeInitiated = true;
 
+//            判断channel是否激活
             final boolean wasActive = isActive();
             final ChannelOutboundBuffer outboundBuffer = this.outboundBuffer;
             this.outboundBuffer = null; // Disallow adding any messages and flushes to outboundBuffer.
+//            执行准备关闭
             Executor closeExecutor = prepareToClose();
             if (closeExecutor != null) {
                 closeExecutor.execute(new Runnable() {
@@ -716,17 +728,22 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                     public void run() {
                         try {
                             // Execute the close.
+                            // 在 closeExecutor 中，执行关闭
                             doClose0(promise);
                         } finally {
+                            // 在 EventLoop 中，执行
                             // Call invokeLater so closeAndDeregister is executed in the EventLoop again!
                             invokeLater(new Runnable() {
                                 @Override
                                 public void run() {
+                                    // 写入数据( 消息 )到对端失败，通知相应数据对应的 Promise 失败。
                                     if (outboundBuffer != null) {
                                         // Fail all the queued messages
                                         outboundBuffer.failFlushed(cause, notify);
+                                        // 关闭内存队列
                                         outboundBuffer.close(closeCause);
                                     }
+                                    // 执行取消注册，并触发 Channel Inactive 事件到 pipeline 中
                                     fireChannelInactiveAndDeregister(wasActive);
                                 }
                             });
@@ -744,6 +761,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                         outboundBuffer.close(closeCause);
                     }
                 }
+                // 正在 flush 中，在 EventLoop 中执行执行取消注册，并触发 Channel Inactive 事件到 pipeline 中
                 if (inFlush0) {
                     invokeLater(new Runnable() {
                         @Override
@@ -752,6 +770,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                         }
                     });
                 } else {
+                    // 不在 flush 中，直接执行执行取消注册，并触发 Channel Inactive 事件到 pipeline 中
                     fireChannelInactiveAndDeregister(wasActive);
                 }
             }
@@ -759,11 +778,16 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
 
         private void doClose0(ChannelPromise promise) {
             try {
+//                执行关闭
                 doClose();
+                // 通知 closeFuture 关闭完成
                 closeFuture.setClosed();
+                // 通知 Promise 关闭成功
                 safeSetSuccess(promise);
             } catch (Throwable t) {
+                // 通知 closeFuture 关闭完成
                 closeFuture.setClosed();
+                // 通知 Promise 关闭异常
                 safeSetFailure(promise, t);
             }
         }
@@ -791,10 +815,12 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
         }
 
         private void deregister(final ChannelPromise promise, final boolean fireChannelInactive) {
+//            设置 promise 为不可取消状态
             if (!promise.setUncancellable()) {
                 return;
             }
 
+            // 不处于已经注册状态，直接通知 Promise 取消注册成功。
             if (!registered) {
                 safeSetSuccess(promise);
                 return;
@@ -809,14 +835,18 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             //
             // See:
             // https://github.com/netty/netty/issues/4435
+//            提交任务到 EventLoop 的线程中执行，以避免一个 Channel 的 ChannelHandler 在不同的 EventLoop 或者线程中执行
+//            todo 实际从目前该方法的调用看下来，有可能不是从 EventLoop 的线程中调用。
             invokeLater(new Runnable() {
                 @Override
                 public void run() {
                     try {
+//                        执行取消注册
                         doDeregister();
                     } catch (Throwable t) {
                         logger.warn("Unexpected exception occurred while deregistering a channel.", t);
                     } finally {
+                        // 触发 Channel Inactive 事件到 pipeline 中
                         if (fireChannelInactive) {
                             pipeline.fireChannelInactive();
                         }
@@ -825,9 +855,12 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                         // close() calls deregister() again - no need to fire channelUnregistered, so check
                         // if it was registered.
                         if (registered) {
+                            // 标记为未注册
                             registered = false;
+                            // 触发 Channel Unregistered 事件到 pipeline 中
                             pipeline.fireChannelUnregistered();
                         }
+                        // 通知 Promise 取消注册成功。
                         safeSetSuccess(promise);
                     }
                 }

@@ -589,11 +589,15 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
 
     @Override
     public ChannelFuture disconnect(final ChannelPromise promise) {
+        // 如果没有 disconnect 操作，则执行 close 事件在 pipeline 上,判断 Channel 是否支持 disconnect 操作
+//        如果支持，则转换执行 close 事件在 pipeline 上。后续的逻辑，close 。
+//        如果不支持，则保持执行 disconnect 事件在 pipeline 上。
         if (!channel().metadata().hasDisconnect()) {
             // Translate disconnect to close if the channel has no notion of disconnect-reconnect.
             // So far, UDP/IP is the only transport that has such behavior.
             return close(promise);
         }
+        // 判断是否为合法的 Promise 对象
         if (isNotValidPromise(promise, false)) {
             // cancelled
             return promise;
@@ -602,6 +606,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         final AbstractChannelHandlerContext next = findContextOutbound(MASK_DISCONNECT);
         EventExecutor executor = next.executor();
         if (executor.inEventLoop()) {
+            // 如果有 disconnect 操作，则执行 disconnect 事件在 pipeline 上
             next.invokeDisconnect(promise);
         } else {
             safeExecute(executor, new Runnable() {
@@ -633,7 +638,8 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
             return promise;
         }
 
-        final AbstractChannelHandlerContext next = findContextOutbound(MASK_CLOSE);
+//        找到下一个包含 MASK_CLOSE 方法的节点
+      final AbstractChannelHandlerContext next = findContextOutbound(MASK_CLOSE);
         EventExecutor executor = next.executor();
         if (executor.inEventLoop()) {
             next.invokeClose(promise);

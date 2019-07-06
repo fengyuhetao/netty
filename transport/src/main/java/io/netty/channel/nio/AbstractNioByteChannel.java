@@ -54,6 +54,9 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
             ((AbstractNioUnsafe) unsafe()).flush0();
         }
     };
+
+//    通道关闭读取，又错误读取的错误的标识
+//     详细见 https://github.com/netty/netty/commit/ed0668384b393c3502c2136e3cc412a5c8c9056e 提交
     private boolean inputClosedSeenErrorOnRead;
 
     /**
@@ -96,16 +99,27 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
 
     protected class NioByteUnsafe extends AbstractNioUnsafe {
 
+//        关闭客户端的连接
         private void closeOnRead(ChannelPipeline pipeline) {
+//            判断是否关闭 Channel 数据的读取
             if (!isInputShutdown0()) {
+                // 开启连接半关闭
+//                ALLOW_HALF_CLOSURE
+//                Netty 参数，一个连接的远端关闭时本地端是否关闭，默认值为 false 。
+//                值为 false时，连接自动关闭。
+//                值为 true 时，触发 ChannelInboundHandler 的#userEventTriggered() 方法，事件 ChannelInputShutdownEvent
                 if (isAllowHalfClosure(config())) {
+                    // 关闭 Channel 数据的读取
                     shutdownInput();
+                    // 触发 ChannelInputShutdownEvent.INSTANCE 事件到 pipeline 中
                     pipeline.fireUserEventTriggered(ChannelInputShutdownEvent.INSTANCE);
                 } else {
                     close(voidPromise());
                 }
             } else {
+                // 标记 inputClosedSeenErrorOnRead 为 true
                 inputClosedSeenErrorOnRead = true;
+                // 触发 ChannelInputShutdownEvent.INSTANCE 事件到 pipeline 中
                 pipeline.fireUserEventTriggered(ChannelInputShutdownReadComplete.INSTANCE);
             }
         }
