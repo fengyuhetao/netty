@@ -37,7 +37,8 @@ abstract class PooledByteBuf<T> extends AbstractReferenceCountedByteBuf {
 
     /**
      * 内存空间。具体什么样的数据，通过子类设置泛型。具体什么样的数据，通过子类设置泛型( T )。
-     * 例如：1) PooledDirectByteBuf 和 PooledUnsafeDirectByteBuf 为 ByteBuffer ；
+     * 例如：
+     * 1) PooledDirectByteBuf 和 PooledUnsafeDirectByteBuf 为 ByteBuffer ；
      * 2) PooledHeapByteBuf 和 PooledUnsafeHeapByteBuf 为 byte[] 。
      */
     protected T memory;
@@ -63,7 +64,7 @@ abstract class PooledByteBuf<T> extends AbstractReferenceCountedByteBuf {
     PoolThreadCache cache;
 
     /**
-     * 临时 ByteBuff 对象
+     * 临时 ByteBuffer 对象
      *
      * @see #internalNioBuffer()
      */

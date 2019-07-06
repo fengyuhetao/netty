@@ -38,6 +38,8 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 public class UnpooledHeapByteBuf extends AbstractReferenceCountedByteBuf {
 
     private final ByteBufAllocator alloc;
+
+//    字节数组
     byte[] array;
     private ByteBuffer tmpNioBuf;
 
@@ -123,7 +125,9 @@ public class UnpooledHeapByteBuf extends AbstractReferenceCountedByteBuf {
 
         int oldCapacity = array.length;
         byte[] oldArray = array;
+//        扩容
         if (newCapacity > oldCapacity) {
+            // 创建新数组
             byte[] newArray = allocateArray(newCapacity);
             System.arraycopy(oldArray, 0, newArray, 0, oldArray.length);
             setArray(newArray);
@@ -133,6 +137,7 @@ public class UnpooledHeapByteBuf extends AbstractReferenceCountedByteBuf {
             int readerIndex = readerIndex();
             if (readerIndex < newCapacity) {
                 int writerIndex = writerIndex();
+                // 如果写索引超过新容量，需要重置下，设置为最大容量。否则就越界了。
                 if (writerIndex > newCapacity) {
                     writerIndex(writerIndex = newCapacity);
                 }
