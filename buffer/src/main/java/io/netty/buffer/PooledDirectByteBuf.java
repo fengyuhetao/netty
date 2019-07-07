@@ -234,9 +234,11 @@ final class PooledDirectByteBuf extends PooledByteBuf<ByteBuffer> {
             return 0;
         }
 
+//        获得临时对象
         ByteBuffer tmpBuf = internal ? internalNioBuffer() : memory.duplicate();
         index = idx(index);
         tmpBuf.clear().position(index).limit(index + length);
+//        写入到channel中
         return out.write(tmpBuf, position);
     }
 
@@ -378,10 +380,12 @@ final class PooledDirectByteBuf extends PooledByteBuf<ByteBuffer> {
     @Override
     public int setBytes(int index, FileChannel in, long position, int length) throws IOException {
         checkIndex(index, length);
+        //        获得临时ByteBuffer对象
         ByteBuffer tmpBuf = internalNioBuffer();
         index = idx(index);
         tmpBuf.clear().position(index).limit(index + length);
         try {
+//            写入临时对象
             return in.read(tmpBuf, position);
         } catch (ClosedChannelException ignored) {
             return -1;
