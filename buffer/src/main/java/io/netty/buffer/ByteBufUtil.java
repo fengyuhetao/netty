@@ -1161,6 +1161,7 @@ public final class ByteBufUtil {
         }
     }
 
+//    NIO Direct ByteBuffer 申请的成本是比较高的，所以基于 ThreadLocal + Recycler 实现重用。
     static final class ThreadLocalDirectByteBuf extends UnpooledDirectByteBuf {
 
         private static final Recycler<ThreadLocalDirectByteBuf> RECYCLER = new Recycler<ThreadLocalDirectByteBuf>() {

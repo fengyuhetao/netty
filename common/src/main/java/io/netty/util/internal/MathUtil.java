@@ -61,6 +61,8 @@ public final class MathUtil {
      * {@code false} if this would result in an index out of bounds exception.
      */
     public static boolean isOutOfBounds(int index, int length, int capacity) {
+        // 只有有负数，或运算，就会有负数。
+        // 另外，此处的越界，不仅仅有 capacity - (index + length < 0 ，例如 index < 0 ，也是越界
         return (index | length | (index + length) | (capacity - (index + length))) < 0;
     }
 
