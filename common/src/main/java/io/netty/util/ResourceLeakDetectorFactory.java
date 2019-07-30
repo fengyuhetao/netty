@@ -51,7 +51,7 @@ public abstract class ResourceLeakDetectorFactory {
      * @param factory the instance that will become the current {@link ResourceLeakDetectorFactory}'s singleton
      */
     public static void setResourceLeakDetectorFactory(ResourceLeakDetectorFactory factory) {
-        factoryInstance = ObjectUtil.checkNotNull(factory, "factory");
+            factoryInstance = ObjectUtil.checkNotNull(factory, "factory");
     }
 
     /**
