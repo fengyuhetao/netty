@@ -248,7 +248,8 @@ public abstract class AbstractByteBuf extends ByteBuf {
         return this;
     }
 
-//    整体代码和 #discardReadBytes() 方法是一致的。差别在于，readerIndex >= capacity() >>> 1 ，读取超过容量的一半时，进行释放。也就是说，在空间和时间之间，做了一个平衡。
+//    整体代码和 #discardReadBytes() 方法是一致的。差别在于，readerIndex >= capacity() >>> 1 ，
+//    读取超过容量的一半时，进行释放。也就是说，在空间和时间之间，做了一个平衡。
     @Override
     public ByteBuf discardSomeReadBytes() {
         ensureAccessible();

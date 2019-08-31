@@ -149,6 +149,7 @@ public abstract class TypeParameterMatcher {
 
     public abstract boolean match(Object msg);
 
+    // 一般情况下，matcher 的类型是 ReflectiveMatcher( 它是 TypeParameterMatcher 的内部类 )。
     private static final class ReflectiveMatcher extends TypeParameterMatcher {
         private final Class<?> type;
 

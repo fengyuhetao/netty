@@ -93,6 +93,7 @@ public abstract class SimpleUserEventChannelHandler<I> extends ChannelInboundHan
     public final void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         boolean release = true;
         try {
+            // 判断是否为匹配的消息
             if (acceptEvent(evt)) {
                 @SuppressWarnings("unchecked")
                 I ievt = (I) evt;

@@ -47,7 +47,10 @@ import io.netty.util.internal.TypeParameterMatcher;
  */
 public abstract class SimpleChannelInboundHandler<I> extends ChannelInboundHandlerAdapter {
 
+    // 类型匹配器
     private final TypeParameterMatcher matcher;
+
+    // 使用完消息是否自动释放
     private final boolean autoRelease;
 
     /**
@@ -64,6 +67,7 @@ public abstract class SimpleChannelInboundHandler<I> extends ChannelInboundHandl
      *                      {@link ReferenceCountUtil#release(Object)}.
      */
     protected SimpleChannelInboundHandler(boolean autoRelease) {
+        // 获得matcher，使用类的 I 泛型对应的 TypeParameterMatcher 类型匹配器
         matcher = TypeParameterMatcher.find(this, SimpleChannelInboundHandler.class, "I");
         this.autoRelease = autoRelease;
     }
@@ -83,6 +87,7 @@ public abstract class SimpleChannelInboundHandler<I> extends ChannelInboundHandl
      *                              {@link ReferenceCountUtil#release(Object)}.
      */
     protected SimpleChannelInboundHandler(Class<? extends I> inboundMessageType, boolean autoRelease) {
+        // 使用 inboundMessageType 参数对应的 TypeParameterMatcher 类型匹配器。
         matcher = TypeParameterMatcher.get(inboundMessageType);
         this.autoRelease = autoRelease;
     }
@@ -97,14 +102,17 @@ public abstract class SimpleChannelInboundHandler<I> extends ChannelInboundHandl
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        // 是否需要释放消息
         boolean release = true;
         try {
             if (acceptInboundMessage(msg)) {
                 @SuppressWarnings("unchecked")
                 I imsg = (I) msg;
+                // 处理消息
                 channelRead0(ctx, imsg);
             } else {
                 release = false;
+                // 触发read事件到下一个节点
                 ctx.fireChannelRead(msg);
             }
         } finally {

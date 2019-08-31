@@ -40,6 +40,7 @@ import static io.netty.util.internal.StringUtil.NEWLINE;
 @SuppressWarnings({ "StringConcatenationInsideStringBufferAppend", "StringBufferReplaceableByString" })
 public class LoggingHandler extends ChannelDuplexHandler {
 
+    // 默认日志级别
     private static final LogLevel DEFAULT_LEVEL = LogLevel.DEBUG;
 
     protected final InternalLogger logger;
