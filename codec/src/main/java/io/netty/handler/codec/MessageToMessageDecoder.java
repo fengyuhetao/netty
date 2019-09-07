@@ -47,7 +47,7 @@ import java.util.List;
  * Be aware that you need to call {@link ReferenceCounted#retain()} on messages that are just passed through if they
  * are of type {@link ReferenceCounted}. This is needed as the {@link MessageToMessageDecoder} will call
  * {@link ReferenceCounted#release()} on decoded messages.
- *
+ * 将消息编码成另一种消息。
  */
 public abstract class MessageToMessageDecoder<I> extends ChannelInboundHandlerAdapter {
 
@@ -85,8 +85,10 @@ public abstract class MessageToMessageDecoder<I> extends ChannelInboundHandlerAd
                 @SuppressWarnings("unchecked")
                 I cast = (I) msg;
                 try {
+//                    将消息解码成另一个消息
                     decode(ctx, cast, out);
                 } finally {
+//                    释放cast原消息
                     ReferenceCountUtil.release(cast);
                 }
             } else {

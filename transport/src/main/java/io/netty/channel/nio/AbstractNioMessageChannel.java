@@ -57,7 +57,7 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
 
     private final class NioMessageUnsafe extends AbstractNioUnsafe {
 
-//        新读取的客户端连接数组
+        //        新读取的客户端连接数组
         private final List<Object> readBuf = new ArrayList<Object>();
 
         @Override
@@ -81,7 +81,8 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
                         if (localRead == 0) {
                             break;
                         }
-//                        读取出错，标记关闭
+
+                        // 读取出错，标记关闭
                         if (localRead < 0) {
                             closed = true;
                             break;
@@ -89,7 +90,8 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
 
                         // 读取消息数量 + localRead
                         allocHandle.incMessagesRead(localRead);
-                    } while (allocHandle.continueReading()); // 循环判断是否继续读取
+                    }
+                    while (allocHandle.continueReading()); // 循环判断是否继续读取
                 } catch (Throwable t) {
                     // 记录异常
                     exception = t;
@@ -97,7 +99,7 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
 
                 // 循环 readBuf 数组，触发 Channel read 事件到 pipeline 中。
                 int size = readBuf.size();
-                for (int i = 0; i < size; i ++) {
+                for (int i = 0; i < size; i++) {
                     readPending = false;
                     // 在内部，会通过 ServerBootstrapAcceptor ，将客户端的 Netty NioSocketChannel 注册到 EventLoop 上
                     pipeline.fireChannelRead(readBuf.get(i));
@@ -142,7 +144,7 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
         final SelectionKey key = selectionKey();
         final int interestOps = key.interestOps();
 
-        for (;;) {
+        for (; ; ) {
             Object msg = in.current();
             if (msg == null) {
                 // Wrote all messages.

@@ -96,15 +96,19 @@ public class FastThreadLocal<V> {
 
     @SuppressWarnings("unchecked")
     private static void addToVariablesToRemove(InternalThreadLocalMap threadLocalMap, FastThreadLocal<?> variable) {
+        // 该变量是 static final 的，因此通常是 0
         Object v = threadLocalMap.indexedVariable(variablesToRemoveIndex);
         Set<FastThreadLocal<?>> variablesToRemove;
         if (v == InternalThreadLocalMap.UNSET || v == null) {
+            // 创建一个基于 IdentityHashMap 的 Set，泛型是 FastThreadLocal
             variablesToRemove = Collections.newSetFromMap(new IdentityHashMap<FastThreadLocal<?>, Boolean>());
+            // 将这个 Set 放到这个 Map 数组的下标 0 处
             threadLocalMap.setIndexedVariable(variablesToRemoveIndex, variablesToRemove);
         } else {
+            // 如果拿到的不是 UNSET ，说明这是第二次操作了，因此可以强转为 Set
             variablesToRemove = (Set<FastThreadLocal<?>>) v;
         }
-
+        // 最后的目的就是将 FastThreadLocal 放置到 Set 中
         variablesToRemove.add(variable);
     }
 

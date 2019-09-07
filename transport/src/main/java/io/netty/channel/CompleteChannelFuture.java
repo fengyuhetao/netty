@@ -23,6 +23,8 @@ import io.netty.util.concurrent.GenericFutureListener;
 /**
  * A skeletal {@link ChannelFuture} implementation which represents a
  * {@link ChannelFuture} which has been completed already.
+ * 尖括号中的泛型表示Future关联的结果，此结果为Void，意味着CompleteChannelFuture
+ * 不关心这个特定结果即get()相关方法返回null。也就是说，我们可以将CompleteChannelFuture纯粹的视为一种回调函数机制。
  */
 abstract class CompleteChannelFuture extends CompleteFuture<Void> implements ChannelFuture {
 
@@ -45,7 +47,7 @@ abstract class CompleteChannelFuture extends CompleteFuture<Void> implements Cha
     protected EventExecutor executor() {
         EventExecutor e = super.executor();
         if (e == null) {
-            return channel().eventLoop();
+            return channel().eventLoop();  // 构造方法未指定使用channel注册到的eventLoop
         } else {
             return e;
         }
