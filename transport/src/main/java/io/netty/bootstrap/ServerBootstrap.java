@@ -163,12 +163,13 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
             @Override
             public void initChannel(final Channel ch) throws Exception {
                 final ChannelPipeline pipeline = ch.pipeline();
+                // 设置handler
                 ChannelHandler handler = config.handler();
                 if (handler != null) {
                     pipeline.addLast(handler);
                 }
 
-//                 添加 ServerBootstrapAcceptor 到 pipeline 中。
+                // 添加 ServerBootstrapAcceptor 到 pipeline 中。
                 // 使用 EventLoop 执行的原因，参见
                 ch.eventLoop().execute(new Runnable() {
                     @Override

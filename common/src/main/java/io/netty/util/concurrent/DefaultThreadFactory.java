@@ -63,6 +63,12 @@ public class DefaultThreadFactory implements ThreadFactory {
         this(toPoolName(poolType), daemon, priority);
     }
 
+    /**
+     * 设置线程池的名字
+     *
+     * @param poolType
+     * @return
+     */
     public static String toPoolName(Class<?> poolType) {
         if (poolType == null) {
             throw new NullPointerException("poolType");

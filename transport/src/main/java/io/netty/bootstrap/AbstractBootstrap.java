@@ -53,9 +53,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     volatile EventLoopGroup group;
 
     /**
-     * Channel 工厂，用于创建 Channel 对象。
-     * * NioServerSocketChannel.class，正常来说，只用到这个
-     * * OioServerSocketChannel 废弃掉了，
+     * Channel 工厂，用于创建 Channel 对象。 * NioServerSocketChannel.class，正常来说，只用到这个 * OioServerSocketChannel 废弃掉了，
      */
     @SuppressWarnings("deprecation")
     private volatile ChannelFactory<? extends C> channelFactory;
@@ -90,8 +88,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     }
 
     /**
-     * The {@link EventLoopGroup} which is used to handle all the events for the to-be-created
-     * {@link Channel}
+     * The {@link EventLoopGroup} which is used to handle all the events for the to-be-created {@link Channel}
      */
     public B group(EventLoopGroup group) {
         ObjectUtil.checkNotNull(group, "group");
@@ -108,13 +105,13 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     }
 
     /**
-     * The {@link Class} which is used to create {@link Channel} instances from.
-     * You either use this or {@link #channelFactory(io.netty.channel.ChannelFactory)} if your
-     * {@link Channel} implementation has no no-args constructor.
+     * The {@link Class} which is used to create {@link Channel} instances from. You either use this or {@link
+     * #channelFactory(io.netty.channel.ChannelFactory)} if your {@link Channel} implementation has no no-args
+     * constructor.
      */
     public B channel(Class<? extends C> channelClass) {
         return channelFactory(new ReflectiveChannelFactory<C>(
-                ObjectUtil.checkNotNull(channelClass, "channelClass")
+            ObjectUtil.checkNotNull(channelClass, "channelClass")
         ));
     }
 
@@ -133,11 +130,10 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     }
 
     /**
-     * {@link io.netty.channel.ChannelFactory} which is used to create {@link Channel} instances from
-     * when calling {@link #bind()}. This method is usually only used if {@link #channel(Class)}
-     * is not working for you because of some more complex needs. If your {@link Channel} implementation
-     * has a no-args constructor, its highly recommend to just use {@link #channel(Class)} to
-     * simplify your code.
+     * {@link io.netty.channel.ChannelFactory} which is used to create {@link Channel} instances from when calling
+     * {@link #bind()}. This method is usually only used if {@link #channel(Class)} is not working for you because of
+     * some more complex needs. If your {@link Channel} implementation has a no-args constructor, its highly recommend
+     * to just use {@link #channel(Class)} to simplify your code.
      */
     @SuppressWarnings({"unchecked", "deprecation"})
     public B channelFactory(io.netty.channel.ChannelFactory<? extends C> channelFactory) {
@@ -174,8 +170,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     }
 
     /**
-     * Allow to specify a {@link ChannelOption} which is used for the {@link Channel} instances once they got
-     * created. Use a value of {@code null} to remove a previous set {@link ChannelOption}.
+     * Allow to specify a {@link ChannelOption} which is used for the {@link Channel} instances once they got created.
+     * Use a value of {@code null} to remove a previous set {@link ChannelOption}.
      */
     public <T> B option(ChannelOption<T> option, T value) {
         ObjectUtil.checkNotNull(option, "option");
@@ -192,8 +188,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     }
 
     /**
-     * Allow to specify an initial attribute of the newly created {@link Channel}.  If the {@code value} is
-     * {@code null}, the attribute of the specified {@code key} is removed.
+     * Allow to specify an initial attribute of the newly created {@link Channel}.  If the {@code value} is {@code
+     * null}, the attribute of the specified {@code key} is removed.
      */
     public <T> B attr(AttributeKey<T> key, T value) {
         ObjectUtil.checkNotNull(key, "key");
@@ -210,8 +206,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     }
 
     /**
-     * Validate all the parameters. Sub-classes may override this, but should
-     * call the super method in that case.
+     * Validate all the parameters. Sub-classes may override this, but should call the super method in that case.
      */
     public B validate() {
         if (group == null) {
@@ -225,8 +220,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
 
     /**
      * Returns a deep clone of this bootstrap which has the identical configuration.  This method is useful when making
-     * multiple {@link Channel}s with similar settings.  Please note that this method does not clone the
-     * {@link EventLoopGroup} deeply but shallowly, making the group a shared resource.
+     * multiple {@link Channel}s with similar settings.  Please note that this method does not clone the {@link
+     * EventLoopGroup} deeply but shallowly, making the group a shared resource.
      */
     @Override
     @SuppressWarnings("CloneDoesntDeclareCloneNotSupportedException")
@@ -281,6 +276,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         return doBind(ObjectUtil.checkNotNull(localAddress, "localAddress"));
     }
 
+    // 端口绑定操作
     private ChannelFuture doBind(final SocketAddress localAddress) {
         final ChannelFuture regFuture = initAndRegister();
         final Channel channel = regFuture.channel();
@@ -288,6 +284,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
             return regFuture;
         }
 
+        // 如果注册完毕
         if (regFuture.isDone()) {
             // At this point we know that the registration was complete and successful.
             ChannelPromise promise = channel.newPromise();
@@ -317,14 +314,19 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         }
     }
 
+    /**
+     * 初始化并注册channel
+     *
+     * @return
+     */
     final ChannelFuture initAndRegister() {
         Channel channel = null;
         try {
             // 根据channel方法传入的socketchannel创建一个新的channel
-//             EchoServer中channel(NioServerSocketChannel.class)
+            //  EchoServer中channel(NioServerSocketChannel.class)指定channel类型
             channel = channelFactory.newChannel();
 
-//            初始化channel
+            // 初始化channel
             init(channel);
         } catch (Throwable t) {
             if (channel != null) {
@@ -362,8 +364,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     abstract void init(Channel channel) throws Exception;
 
     private static void doBind0(
-            final ChannelFuture regFuture, final Channel channel,
-            final SocketAddress localAddress, final ChannelPromise promise) {
+        final ChannelFuture regFuture, final Channel channel,
+        final SocketAddress localAddress, final ChannelPromise promise) {
 
         // This method is invoked before channelRegistered() is triggered.  Give user handlers a chance to set up
         // the pipeline in its channelRegistered() implementation.
@@ -398,8 +400,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     }
 
     /**
-     * Returns the {@link AbstractBootstrapConfig} object that can be used to obtain the current config
-     * of the bootstrap.
+     * Returns the {@link AbstractBootstrapConfig} object that can be used to obtain the current config of the
+     * bootstrap.
      */
     public abstract AbstractBootstrapConfig<B, C> config();
 
@@ -426,8 +428,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         return localAddress;
     }
 
-    @SuppressWarnings("deprecation")
-    final ChannelFactory<? extends C> channelFactory() {
+    @SuppressWarnings("deprecation") final ChannelFactory<? extends C> channelFactory() {
         return channelFactory;
     }
 
@@ -451,7 +452,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
      * @param logger
      */
     static void setChannelOptions(
-            Channel channel, Map<ChannelOption<?>, Object> options, InternalLogger logger) {
+        Channel channel, Map<ChannelOption<?>, Object> options, InternalLogger logger) {
         for (Map.Entry<ChannelOption<?>, Object> e : options.entrySet()) {
             setChannelOption(channel, e.getKey(), e.getValue(), logger);
         }
@@ -465,34 +466,33 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
      * @param logger
      */
     static void setChannelOptions(
-            Channel channel, Map.Entry<ChannelOption<?>, Object>[] options, InternalLogger logger) {
+        Channel channel, Map.Entry<ChannelOption<?>, Object>[] options, InternalLogger logger) {
         for (Map.Entry<ChannelOption<?>, Object> e : options) {
             setChannelOption(channel, e.getKey(), e.getValue(), logger);
         }
     }
 
     /**
-     * 设置已经创建的channel的可选项， options设置可选项
-     * options方法设置的可选性最终会被依然会通过该方法放到已经创建的channel的config中。
+     * 设置已经创建的channel的可选项， options设置可选项 options方法设置的可选性最终会被依然会通过该方法放到已经创建的channel的config中。
      */
     @SuppressWarnings("unchecked")
     private static void setChannelOption(
-            Channel channel, ChannelOption<?> option, Object value, InternalLogger logger) {
+        Channel channel, ChannelOption<?> option, Object value, InternalLogger logger) {
         try {
             if (!channel.config().setOption((ChannelOption<Object>) option, value)) {
                 logger.warn("Unknown channel option '{}' for channel '{}'", option, channel);
             }
         } catch (Throwable t) {
             logger.warn(
-                    "Failed to set channel option '{}' with value '{}' for channel '{}'", option, value, channel, t);
+                "Failed to set channel option '{}' with value '{}' for channel '{}'", option, value, channel, t);
         }
     }
 
     @Override
     public String toString() {
         StringBuilder buf = new StringBuilder()
-                .append(StringUtil.simpleClassName(this))
-                .append('(').append(config()).append(')');
+            .append(StringUtil.simpleClassName(this))
+            .append('(').append(config()).append(')');
         return buf.toString();
     }
 

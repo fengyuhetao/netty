@@ -185,6 +185,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
          * 创建 Selector 对象
          */
         final SelectorTuple selectorTuple = openSelector();
+        // 一个selector和一个NioEventLoop做唯一的绑定
         selector = selectorTuple.selector;
         unwrappedSelector = selectorTuple.unwrappedSelector;
         selectStrategy = strategy;

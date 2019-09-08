@@ -162,7 +162,10 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         super(parent);
         this.addTaskWakesUp = addTaskWakesUp;
         this.maxPendingTasks = Math.max(16, maxPendingTasks);
+        // 保存线程执行器
         this.executor = ThreadExecutorMap.apply(executor, this);
+        // 外部线程在执行netty的一些任务，如果不是NioEventLoop对应的线程，塞到队列里边
+        // 创建Mpsc队列，多生产者，单消费者
         taskQueue = newTaskQueue(this.maxPendingTasks);
         rejectedExecutionHandler = ObjectUtil.checkNotNull(rejectedHandler, "rejectedHandler");
     }
