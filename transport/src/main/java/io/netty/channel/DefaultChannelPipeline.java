@@ -244,7 +244,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
             // 创建节点名
             // 创建节点
-            newCtx = newContext(group, filterName(name, handler), handler);
+            newCtx   = newContext(group, filterName(name, handler), handler);
 
 //            最终插入节点
             addLast0(newCtx);

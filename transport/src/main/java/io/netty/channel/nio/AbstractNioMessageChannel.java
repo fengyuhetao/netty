@@ -57,7 +57,7 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
 
     private final class NioMessageUnsafe extends AbstractNioUnsafe {
 
-        //        新读取的客户端连接数组
+        // 新读取的客户端连接数组
         private final List<Object> readBuf = new ArrayList<Object>();
 
         @Override

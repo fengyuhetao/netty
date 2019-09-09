@@ -875,7 +875,9 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     private static final long SCHEDULE_PURGE_INTERVAL = TimeUnit.SECONDS.toNanos(1);
 
     private void startThread() {
+        // 判断是否是未启动
         if (state == ST_NOT_STARTED) {
+            // CAS修改状态
             if (STATE_UPDATER.compareAndSet(this, ST_NOT_STARTED, ST_STARTED)) {
                 boolean success = false;
                 try {
@@ -908,6 +910,9 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         return false;
     }
 
+    /**
+     * 实际启动线程
+     */
     private void doStartThread() {
         assert thread == null;
         executor.execute(new Runnable() {
@@ -921,6 +926,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                 boolean success = false;
                 updateLastExecutionTime();
                 try {
+                    // NioEventLoop启动
                     SingleThreadEventExecutor.this.run();
                     success = true;
                 } catch (Throwable t) {

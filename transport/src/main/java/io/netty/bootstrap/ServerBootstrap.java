@@ -205,6 +205,9 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
         return new Map.Entry[size];
     }
 
+    /**
+     * 用于新连接NioEventLoop的分配以及Selector的注册
+     */
     private static class ServerBootstrapAcceptor extends ChannelInboundHandlerAdapter {
         // 记录当前的属性
         private final EventLoopGroup childGroup;
