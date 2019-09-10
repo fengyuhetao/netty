@@ -239,18 +239,18 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         final AbstractChannelHandlerContext newCtx;
         // 同步，为了防止多线程并发操作 pipeline 底层的双向链表
         synchronized (this) {
-//            检查是否有重复handler
+            // 检查是否有重复handler
             checkMultiplicity(handler);
 
             // 创建节点名
             // 创建节点
             newCtx   = newContext(group, filterName(name, handler), handler);
 
-//            最终插入节点
+            // 最终插入节点
             addLast0(newCtx);
 
             // pipeline 暂未注册，添加回调。再注册完成后，执行回调，可见{@link invokeHandlerAddedIfNeeded}
-//            这种情况，发生于 ServerBootstrap 启动的过程中。在 ServerBootstrap#init(Channel channel) 方法中，
+            // 这种情况，发生于 ServerBootstrap 启动的过程中。在 ServerBootstrap#init(Channel channel) 方法中，
             // 会添加 ChannelInitializer 对象到 pipeline 中，恰好此时 Channel 并未注册。
             // If the registered is false it means that the channel was not registered on an eventLoop yet.
             // In this case we add the context to the pipeline and add a task that will call
@@ -260,24 +260,25 @@ public class DefaultChannelPipeline implements ChannelPipeline {
                 newCtx.setAddPending();
 
                 // 添加 PendingHandlerCallback 回调
-//                为什么会有 PendingHandlerCallback 呢？
-//                因为 ChannelHandler 添加到 pipeline 中，会触发 ChannelHandler 的添加完成( added )事件，
-//                并且该事件需要在 Channel 所属的 EventLoop 中执行。
-//                但是 Channel 并未注册在 EventLoop 上时，需要暂时将“触发 ChannelHandler 的添加完成( added )事件”的逻辑，
-//                作为一个 PendingHandlerCallback 进行“缓存”。在 Channel 注册到 EventLoop 上时，进行回调执行。
+                // 为什么会有 PendingHandlerCallback 呢？
+                //  因为 ChannelHandler 添加到 pipeline 中，会触发 ChannelHandler 的添加完成( added )事件，
+                // 并且该事件需要在 Channel 所属的 EventLoop 中执行。
+                // 但是 Channel 并未注册在 EventLoop 上时，需要暂时将“触发 ChannelHandler 的添加完成( added )事件”的逻辑，
+                // 作为一个 PendingHandlerCallback 进行“缓存”。在 Channel 注册到 EventLoop 上时，进行回调执行。
                 callHandlerCallbackLater(newCtx, true);
                 return this;
             }
 
-//            如果pipeline已经注册
+            // 如果pipeline已经注册
             EventExecutor executor = newCtx.executor();
-//            不在 EventLoop 的线程中，提交 EventLoop 中，执行回调用户方法
+            // 不在 EventLoop 的线程中，提交 EventLoop 中，执行回调用户方法
             if (!executor.inEventLoop()) {
                 callHandlerAddedInEventLoop(newCtx, executor);
                 return this;
             }
         }
-//        回调 ChannelHandler added 事件
+
+        // 回调 ChannelHandler added 事件
         callHandlerAdded0(newCtx);
         return this;
     }
@@ -1194,8 +1195,8 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     private void callHandlerAddedForAllHandlers() {
         final PendingHandlerCallback pendingHandlerCallbackHead;
 
-//        #addLast(EventExecutorGroup group, String name, ChannelHandler handler) 的代码需要对
-//        pendingHandlerCallbackHead 互斥，避免并发修改的问题。
+        // #addLast(EventExecutorGroup group, String name, ChannelHandler handler) 的代码需要对
+        // pendingHandlerCallbackHead 互斥，避免并发修改的问题。
         synchronized (this) {
             assert !registered;
 
@@ -1207,7 +1208,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
             this.pendingHandlerCallbackHead = null;
         }
 
-//        顺序向下，执行 PendingHandlerCallback 的回调
+        // 顺序向下，执行 PendingHandlerCallback 的回调
         // This must happen outside of the synchronized(...) block as otherwise handlerAdded(...) may be called while
         // holding the lock and so produce a deadlock if handlerAdded(...) will try to add another handler from outside
         // the EventLoop.

@@ -220,6 +220,7 @@ final class PooledDirectByteBuf extends PooledByteBuf<ByteBuffer> {
             return 0;
         }
 
+        // 将ByteBuf转化为ByteBuffer
         ByteBuffer tmpBuf;
         if (internal) {
             tmpBuf = internalNioBuffer();
@@ -228,6 +229,7 @@ final class PooledDirectByteBuf extends PooledByteBuf<ByteBuffer> {
         }
         index = idx(index);
         tmpBuf.clear().position(index).limit(index + length);
+        // 真正执行将数据写入到socket
         return out.write(tmpBuf);
     }
 

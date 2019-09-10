@@ -947,7 +947,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 return;
             }
 
-//            标记内存开始flush
+            // 标记内存开始flush
             outboundBuffer.addFlush();
             flush0();
         }

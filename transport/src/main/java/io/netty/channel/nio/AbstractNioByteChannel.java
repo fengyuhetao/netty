@@ -250,6 +250,7 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
                 return 0;
             }
 
+            // 返回写掉多少字节
             final int localFlushedAmount = doWriteBytes(buf);
             if (localFlushedAmount > 0) {
                 in.progress(localFlushedAmount);
@@ -282,6 +283,7 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
 
     @Override
     protected void doWrite(ChannelOutboundBuffer in) throws Exception {
+        // 自旋写入，16次
         int writeSpinCount = config().getWriteSpinCount();
         do {
             Object msg = in.current();
@@ -307,7 +309,7 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
             }
 
             // 非内存 ByteBuf ，需要进行创建封装
-//            在使用 Socket 传递数据时性能很好，由于数据直接在内存中，不存在从 JVM 拷贝数据到直接缓冲区的过程，性能好
+            // 在使用 Socket 传递数据时性能很好，由于数据直接在内存中，不存在从 JVM 拷贝数据到直接缓冲区的过程，性能好
             return newDirectBuffer(buf);
         }
 
